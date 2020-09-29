@@ -1,0 +1,19 @@
+[app]
+hostname = "localhost"
+port = 8080
+metrics_enabled = false
+mode = "release"
+pprof_enabled = false
+
+[cache]
+shards = 512
+max_bytes = 1073741824 # 1024 * 1024 * 1024
+
+# KV LIMITS
+# this will set limits for cache keys and values
+# these limits can be adjusted store large entries accordingly
+max_key_size_in_bytes = 16384 # 16 * 1024 KB
+max_value_size_in_bytes = 524288 # 512 * 1024
+
+ttl_in_seconds = 1800000  # 30 * time.Minute
+stats_enabled = true

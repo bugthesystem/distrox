@@ -1,0 +1,22 @@
+linters-settings:
+  lll:
+    tab-width: 4
+    line-length: 111
+
+  gocognit:
+     min-complexity: 10
+
+# options for analysis running
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - gocognit
+    - gocritic
+    - goimports
+    - lll
+    - misspell
+    - whitespace
+    - unparam
+    - bodyclose
