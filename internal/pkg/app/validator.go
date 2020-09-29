@@ -4,21 +4,21 @@ import (
 	"fmt"
 )
 
-func validateKey(key string, max int64) (bool, string) {
+func validateKey(keyBuf []byte, key string, max int64) (bool, string) {
 	var msg string
 	if key == "" {
 		msg = "empty key"
 		return false, msg
 	}
 
-	keyBytes := []byte(key)
-	if int64(len(keyBytes)) < max {
+	keyBuf = append(keyBuf, key...)
+	if int64(len(keyBuf)) < max {
 		return true, ""
 	}
 
 	msg = fmt.Sprintf(
 		"entry key size: %d is bigger than max key size in bytes:%d",
-		len(keyBytes), max)
+		len(keyBuf), max)
 
 	return false, msg
 }

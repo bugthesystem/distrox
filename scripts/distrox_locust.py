@@ -10,7 +10,7 @@ class DistroxApiUser(HttpUser):
     class DistroxServerTasks(TaskSet):
         keys = []
         v = "\x68\x65\x6C\x6C\x6F\x20\x77\x6F\x72\x6C\x64\x21"
-        entry_count = 100
+        entry_count = 300
 
         def put_entry(self, key):
             self.client.headers['Content-Type'] = "application/json"
@@ -25,4 +25,4 @@ class DistroxApiUser(HttpUser):
 
         def on_start(self):
             for i in range(self.entry_count):
-                self.put_entry("key-{0}".format(i))
+                self.put_entry("key-{0}".format(random.randint(1, 1000)))

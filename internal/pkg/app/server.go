@@ -25,12 +25,14 @@ type Server struct {
 	srv            *http.Server
 	readTimeout    time.Duration
 	writeTimeout   time.Duration
+	bpool          common.Pooled
 }
 
 type serverOption func(*Server)
 
 func NewServer(addr string, c *distrox.Cache, opts ...serverOption) *Server {
-	s := &Server{addr: addr, cache: c, logger: common.NewDefaultLogger()}
+	s := &Server{addr: addr, cache: c, logger: common.NewDefaultLogger(),
+		bpool: common.NewDefaultPooled(0)}
 
 	for _, opt := range opts {
 		opt(s)

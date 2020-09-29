@@ -26,9 +26,9 @@ I run benchmarks against
 There are more optimizations to be made to make read faster for example `3X.XXMB/s`. 
 However, I could not spend more time on it but I'd be happy to discuss it further. 
 
-**Specs:**  
-Processor: 2.4 GHz Quad-Core Intel Core i5
-Memory   : 16 GB 2133 MHz LPDDR3
+**Specs**  
+Processor: 2.4 GHz Quad-Core Intel Core i5  
+Memory   : 16 GB 2133 MHz LPDDR3  
 
 ```
 ❯ make bench
@@ -51,7 +51,7 @@ ok  	github.com/ziyasal/distroxy/pkg/distrox	122.740s
 ```
 
 ## Load test
-I run `sudo launchctl limit maxfiles 500000 500000` command to increase defaults.
+I run `sudo launchctl limit maxfiles 65535 65535` command to increase defaults.
 
 ```sh
 pip3 install locust
@@ -86,7 +86,7 @@ or not to collect parts of the actual entry value.
 One caveat, storing big entries might require setting a bigger cache sizes to prevent overwriting existing entries.
 
 - Time api is cached in the clock component 
-Epoch data cached in the clock and updated every second, this eliminates calls to time api.
+time.Now cached in the clock and updated every second, this eliminates calls to time api.
 
 ### Eviction options
 - Cleanup job
@@ -122,7 +122,7 @@ I'd go with the first option and use following binary format.
 repeating {
   $ts-bytes
   $key-bytes-length
-  $value-bytes-lengt
+  $value-bytes-length
   $key-bytes
   $value-bytes
 }
@@ -148,7 +148,7 @@ repeating {
  the memory region is unmapped, this can lead to a segmentation fault
 - Export server metrics as Prometheus metrics
 - Export cache stats as part of Prometheus metrics (currently its served from `/stats` endpoint)
-- Add more unit tests 
+- Add more tests 
    * cover cache edge cases, 
    * cover more server cases   
    * load test scenarios

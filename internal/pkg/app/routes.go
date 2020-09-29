@@ -35,7 +35,10 @@ func (s *Server) newRouter() *gin.Engine {
 
 func (s *Server) putHandler(ctx *gin.Context) {
 	key := ctx.Param("key")
-	if ok, msg := validateKey(fmt.Sprintf("%s", key), s.cache.MaxKeySizeInBytes); !ok {
+	keyBuf := s.bpool.Get()
+	defer s.bpool.Put(keyBuf)
+
+	if ok, msg := validateKey(keyBuf, key, s.cache.MaxKeySizeInBytes); !ok {
 		s.logger.Debug(fmt.Sprintf("%s - op: %s", msg, ctx.Request.Method))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
@@ -55,8 +58,7 @@ func (s *Server) putHandler(ctx *gin.Context) {
 		return
 	}
 
-	keyBytes := []byte(fmt.Sprintf("%s", key))
-	if err := s.cache.SetBin(keyBytes, valueBytes); err != nil {
+	if err := s.cache.SetBin(keyBuf, valueBytes); err != nil {
 		msg := "An error occurred while storing valueBytes to cache"
 		s.logger.Err(msg, err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": msg})
@@ -72,15 +74,16 @@ func (s *Server) putHandler(ctx *gin.Context) {
 
 func (s *Server) getHandler(ctx *gin.Context) {
 	key := ctx.Param("key")
+	keyBuf := s.bpool.Get()
+	defer s.bpool.Put(keyBuf)
 
-	if ok, msg := validateKey(fmt.Sprintf("%s", key), s.cache.MaxKeySizeInBytes); !ok {
+	if ok, msg := validateKey(keyBuf, key, s.cache.MaxKeySizeInBytes); !ok {
 		s.logger.Debug(fmt.Sprintf("%s - op: %s", msg, ctx.Request.Method))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 
-	keyBytes := []byte(fmt.Sprintf("%s", key))
-	entry, err := s.cache.GetBin(nil, keyBytes)
+	entry, err := s.cache.GetBin(nil, keyBuf)
 	if err != nil {
 		s.handleError(ctx, err)
 		return
@@ -95,14 +98,16 @@ func (s *Server) getHandler(ctx *gin.Context) {
 
 func (s *Server) deleteHandler(ctx *gin.Context) {
 	key := ctx.Param("key")
+	keyBuf := s.bpool.Get()
+	defer s.bpool.Put(keyBuf)
 
-	if ok, msg := validateKey(fmt.Sprintf("%s", key), s.cache.MaxKeySizeInBytes); !ok {
+	if ok, msg := validateKey(keyBuf, key, s.cache.MaxKeySizeInBytes); !ok {
 		s.logger.Debug(fmt.Sprintf("%s - op: %s", msg, ctx.Request.Method))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 
-	err := s.cache.Del(fmt.Sprintf("%s", key))
+	err := s.cache.DelBin(keyBuf)
 
 	if err != nil {
 		s.handleError(ctx, err)
