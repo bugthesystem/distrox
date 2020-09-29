@@ -82,14 +82,16 @@ func (s *Server) getHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
+	valBuf := s.bpool.Get()
+	defer s.bpool.Put(valBuf)
 
-	entry, err := s.cache.GetBin(nil, keyBuf)
+	valBuf, err := s.cache.GetBin(valBuf, keyBuf)
 	if err != nil {
 		s.handleError(ctx, err)
 		return
 	}
 
-	_, err = ctx.Writer.Write(entry)
+	_, err = ctx.Writer.Write(valBuf)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError,
 			gin.H{"error": "value bytes could not written to response"})

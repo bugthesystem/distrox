@@ -106,7 +106,7 @@ func (c *Cache) GetBin(retBuf []byte, key []byte) ([]byte, error) {
 	retBuf, isBigEntry, err := c.getBin(retBuf, key)
 
 	if err != nil {
-		return nil, err
+		return retBuf, err
 	}
 
 	if isBigEntry {
