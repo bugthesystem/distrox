@@ -45,17 +45,17 @@ func (r *RingBuf) Write(blobs ...[]byte) uint64 {
 	currentPosition := r.Pos()
 	nextPosition := currentPosition + blobLen
 	blockIdx := currentPosition / r.blockSize
-	newChunkIndex := nextPosition / r.blockSize
+	newBlockIndex := nextPosition / r.blockSize
 
-	if newChunkIndex > blockIdx {
-		if newChunkIndex >= r.Len() {
+	if newBlockIndex > blockIdx {
+		if newBlockIndex >= r.Len() {
 			currentPosition = 0
 			nextPosition = blobLen
 			blockIdx = 0
 		} else {
-			currentPosition = newChunkIndex * r.blockSize
+			currentPosition = newBlockIndex * r.blockSize
 			nextPosition = currentPosition + blobLen
-			blockIdx = newChunkIndex
+			blockIdx = newBlockIndex
 		}
 
 		// reset block
@@ -87,9 +87,9 @@ func (r *RingBuf) Cap() uint64 {
 	return c
 }
 
-func NewRingBuf(chunks uint64, blockSize uint64, pool common.Pooled) *RingBuf {
+func NewRingBuf(blocks uint64, blockSize uint64, pool common.Pooled) *RingBuf {
 	return &RingBuf{
-		blocks:    make([][]byte, chunks),
+		blocks:    make([][]byte, blocks),
 		blockSize: blockSize,
 		pool:      pool,
 	}

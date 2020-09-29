@@ -55,17 +55,22 @@ I run `sudo launchctl limit maxfiles 65535 65535` command to increase defaults.
 
 ```sh
 pip3 install locust
-locust -f scripts/distrox_locust.py --users 1000 --spawn-rate 30
+locust -f scripts/distrox_locust.py --users 1000 --spawn-rate 100
+
+#headless
+locust -f scripts/distrox_locust.py  --headless --users 1000 --spawn-rate 100 --run-time 5m
 ```
 
 ## Design Notes
 The cache is sharded and has its own locks thus the time spent is reduced
-while waiting for locks. Each shard has a map with `hash(key) → position((ts, key, value))`
+while waiting for locks. Each shard has a map with [1]`hash(key) → packed(position((ts, key, value)), fragmened-flag)`
 in the ring buffer, and the ring buffer has 64 KB-size (for having a low-fragmentation) byte slices occupied
 by encoded (ts, key, value) entries.
 
-There are two cases considered; 
-### Entries fit into default chunk (64KB)
+-[1] - uint64 =>  63bits for position and last 1bit for the fragmented flag
+
+There are two cases considered in terms of entry size; 
+### Entries fit into default mem-block (64KB)
 ```sh
 |---------------------|-------------------|---------------------|-----------|-------------|
 | timestamp bytes — 8 | key len bytes — 2 | value len bytes — 2 | key bytes | value bytes |
@@ -74,11 +79,12 @@ There are two cases considered;
 
 ### Entries don't fit into default mem-block
 For the big entries (k + v + headers > 64 KB), the below approach implemented:
-* Split entry into smaller parts where it can fit into the default memory-block (64KB in our case)
-* Calculate the key for each entry-value-chunk by using chunk number and value hash and
-store the entry-value-chunk in the cache with the calculated key
-* Store the entry-value-hash, and the entry-value-length as a new value with the actual key
-(when the entry requested, the stored value will be processed to find out the parts of the actual entry value)
+* Split entry into smaller fragments where it can fit into the default memory-block (64KB in our case)
+* Calculate the key for each fragment by using fragment index and the value hash and
+store the fragment in the cache with the calculated key
+* Store the value-hash, and the value-length as a new value (meta-value) with the actual key
+(when the entry requested, the stored value (meta-value) will be processed to find out 
+the fragments of the actual value)
 * Fragmented entry flag for the "meta entry" is set to true (it's "false" for non-fragmented entries). 
 Then the flag checked to determine whether processing the entry value required 
 or not to collect parts of the actual entry value.
@@ -91,6 +97,7 @@ time.Now cached in the clock and updated every second, this eliminates calls to 
 ### Eviction options
 - Cleanup job
 - Evict on get
+
 Currently, the `evict on get` approach implemented (also, entries
 evicted from the cache on cache size overflow).
 

@@ -26,7 +26,7 @@ func NewDefaultPooled(blockSize int) Pooled {
 	return &p
 }
 
-// get gets a chunk from the pool or creates a new one if reuse failed.
+// get gets a byte array from the pool or creates a new one if reuse failed.
 func (p *syncPooled) Get() []byte {
 	v := p.pool.Get()
 	if v != nil {
@@ -36,7 +36,7 @@ func (p *syncPooled) Get() []byte {
 	return make([]byte, p.blockSize)
 }
 
-// put puts a chunk to reuse pool if it can be reused.
+// put puts a byte array to reuse pool if it can be reused.
 func (p *syncPooled) Put(b []byte) {
 	size := cap(b)
 	if p.blockSize != 0 && size < p.blockSize {
