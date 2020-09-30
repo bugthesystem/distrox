@@ -1,21 +1,23 @@
 package common
 
-import (
-	"encoding/binary"
-)
-
 func EncodeEntry(key []byte, value []byte, timestamp int64, tsBuff *[]byte) [12]byte {
 	var kvLenBuf [12]byte
 
 	blob := *tsBuff
 
-	binary.LittleEndian.PutUint64(blob, uint64(timestamp))
+	blob = MarshalUint64(blob, uint64(timestamp))
 
 	copy(kvLenBuf[0:], blob)
 
+	// key-len is 2^16 so it can be stored as two bytes by right shifting with 8 first
+	// and 8 right bits of key-len as byte to store as two parts
+	// decode => uint16((kvLenBuf[8] << 8)) | uint16(kvLenBuf[9])
 	kvLenBuf[8] = byte(uint16(len(key)) >> 8)
 	kvLenBuf[9] = byte(len(key))
 
+	// value-len is 2^16 so it can be stored as two bytes by right shifting with 8 first
+	// and 8 right bits of value-len as byte to store as two parts
+	// decode => uint16((kvLenBuf[10] << 8)) | uint16(kvLenBuf[11])
 	kvLenBuf[10] = byte(uint16(len(value)) >> 8)
 	kvLenBuf[11] = byte(len(value))
 

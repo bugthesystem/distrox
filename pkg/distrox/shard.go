@@ -1,7 +1,6 @@
 package distrox
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"sync"
@@ -18,6 +17,7 @@ const (
 	entryHeadersSizeInBytes = 12                                    // timestamp + len(k) + len(value)
 	defaultKeySizeInBytes   = 16 * 1024                             // 16kb
 	defaultValueSizeInBytes = (48 * 1024) - entryHeadersSizeInBytes // (48 * 1024) - 12 KB
+	byteSize                = 8
 )
 
 var (
@@ -37,9 +37,8 @@ type shard struct {
 	// tsBuf used when entry created timestamp is written to headers buffer
 	tsBuf []byte
 
-	statsEnabled     bool
-	lifeWindow       int64
-	blockSizeInBytes uint64
+	statsEnabled bool
+	ttlInSeconds int64
 
 	logger common.Logger
 	clock  common.StoppableClock
@@ -59,7 +58,7 @@ type shard struct {
 func newShard(
 	shardSizeInBytes uint64,
 	memBlockSizeInBytes uint64,
-	lifeWindow int64,
+	ttlInSeconds int64,
 	maxShardSizeInBytes uint64,
 	clock common.StoppableClock,
 	logger common.Logger,
@@ -70,7 +69,7 @@ func newShard(
 
 	if shardSizeInBytes >= maxShardSizeInBytes {
 		return nil, fmt.Errorf(
-			"shard size=%d should be smaller than %d",
+			"shard size:%d should be smaller than max shard size: %d",
 			shardSizeInBytes, maxShardSizeInBytes)
 	}
 
@@ -82,9 +81,8 @@ func newShard(
 	s.logger = logger
 	s.tsBuf = make([]byte, timestampSizeInBytes)
 	s.clock = clock
-	s.lifeWindow = lifeWindow
+	s.ttlInSeconds = ttlInSeconds
 	s.statsEnabled = statsEnabled
-	s.blockSizeInBytes = memBlockSizeInBytes
 
 	s.reset()
 
@@ -113,7 +111,7 @@ func (s *shard) set(k, v []byte, h uint64, fragmented bool) error {
 	entryHeadersBuf := common.EncodeEntry(k, v, s.clock.Now(), &s.tsBuf)
 
 	entryHeadersLen := uint64(len(entryHeadersBuf) + len(k) + len(v))
-	if entryHeadersLen >= s.blockSizeInBytes {
+	if entryHeadersLen >= s.ring.BlockSize() {
 		return ErrEntrySizeTooBig
 	}
 
@@ -142,33 +140,33 @@ func (s *shard) get(retBuf, key []byte, hashOfKey uint64, appendToRetBuf bool) (
 	}
 
 	// entryIdx consist of the actual index of the entry value and fragmented entry flag
-	isFragmentedEntry, indexOfEntry := common.UnpackIntegers(entryIdx, entryIndexBytesSize)
-	blockIndex := indexOfEntry / s.blockSizeInBytes
+	isFragmentedEntry, entryPosition := common.UnpackIntegers(entryIdx, entryIndexBytesSize)
+	entryRingIndex := entryPosition / s.ring.BlockSize()
 
-	if blockIndex >= s.ring.Len() {
+	if entryRingIndex >= s.ring.Len() {
 		s.logger.Printf(
 			"corrupted data — chunk index: %d bigger chunks in the ring len: %d",
-			blockIndex, s.ring.Len())
+			entryRingIndex, s.ring.Len())
 		s.rwMutex.RUnlock()
 		atomic.AddUint64(&s.misses, 1)
 		return retBuf, false, ErrEntryNotFound
 	}
 
-	indexOfEntry %= s.blockSizeInBytes
+	entryPosition %= s.ring.BlockSize()
 
-	if indexOfEntry+entryHeadersSizeInBytes >= s.blockSizeInBytes {
+	if entryPosition+entryHeadersSizeInBytes >= s.ring.BlockSize() {
 		s.logger.Printf("corrupted data — entry headers:%d from entry index: exceeds chunk size:%d",
-			entryHeadersSizeInBytes, indexOfEntry, s.blockSizeInBytes)
+			entryHeadersSizeInBytes, entryPosition, s.ring.BlockSize())
 		s.rwMutex.RUnlock()
 		atomic.AddUint64(&s.misses, 1)
 		return retBuf, false, ErrEntryNotFound
 	}
 
-	entryHeadersBuf := s.ring.Read(blockIndex, indexOfEntry, indexOfEntry+entryHeadersSizeInBytes)
-	timestamp := int64(binary.LittleEndian.Uint64(entryHeadersBuf[0:timestampSizeInBytes]))
+	entryHeadersBuf := s.ring.Read(entryRingIndex, entryPosition, entryPosition+entryHeadersSizeInBytes)
+	timestamp := int64(common.UnmarshalUint64(entryHeadersBuf[0:timestampSizeInBytes]))
 
 	// Evict on get
-	if (s.clock.Now() - timestamp) > s.lifeWindow {
+	if (s.clock.Now() - timestamp) > s.ttlInSeconds {
 		s.rwMutex.RUnlock()
 
 		// acquire lock to delete the item
@@ -184,23 +182,24 @@ func (s *shard) get(retBuf, key []byte, hashOfKey uint64, appendToRetBuf bool) (
 		return retBuf, false, ErrEntryNotFound
 	}
 
-	keyLen := (uint64(entryHeadersBuf[8]) << 8) | uint64(entryHeadersBuf[9])
-	valLen := (uint64(entryHeadersBuf[10]) << 8) | uint64(entryHeadersBuf[11])
-	indexOfEntry += entryHeadersSizeInBytes // (ts,k,v) metadata bytes len
+	// get key and value len back
+	keyLen := (uint64(entryHeadersBuf[8]) << byteSize) | uint64(entryHeadersBuf[9])
+	valLen := (uint64(entryHeadersBuf[10]) << byteSize) | uint64(entryHeadersBuf[11])
+	entryPosition += entryHeadersSizeInBytes // (ts,k,v) metadata bytes len
 
-	if indexOfEntry+keyLen+valLen >= s.blockSizeInBytes {
+	if entryPosition+keyLen+valLen >= s.ring.BlockSize() {
 		s.logger.Printf(
 			"corrupted data — entry kv size:%d from the entry index:%d exceeds the chunk size: %d",
-			keyLen+valLen, indexOfEntry, s.blockSizeInBytes)
+			keyLen+valLen, entryPosition, s.ring.BlockSize())
 		s.rwMutex.RUnlock()
 		return retBuf, false, ErrEntryNotFound
 	}
 
-	keyBytes := s.ring.Read(blockIndex, indexOfEntry, indexOfEntry+keyLen)
+	keyBytes := s.ring.Read(entryRingIndex, entryPosition, entryPosition+keyLen)
 	if string(key) == string(keyBytes) {
-		indexOfEntry += keyLen
+		entryPosition += keyLen
 		if appendToRetBuf {
-			valueBytes := s.ring.Read(blockIndex, indexOfEntry, indexOfEntry+valLen)
+			valueBytes := s.ring.Read(entryRingIndex, entryPosition, entryPosition+valLen)
 			retBuf = append(retBuf, valueBytes...)
 		}
 		if s.statsEnabled {

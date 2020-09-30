@@ -32,6 +32,10 @@ func (r *RingBuf) Len() uint64 {
 	return uint64(len(r.blocks))
 }
 
+func (r *RingBuf) BlockSize() uint64 {
+	return r.blockSize
+}
+
 func (r *RingBuf) Read(index uint64, lowBound uint64, highBound uint64) []byte {
 	return r.blocks[index][lowBound:highBound]
 }
