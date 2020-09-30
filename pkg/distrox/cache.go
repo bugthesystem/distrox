@@ -20,7 +20,8 @@ const (
 )
 
 var (
-	ErrEntryNotFound = errors.New("entry not found")
+	ErrEntryNotFound    = errors.New("entry not found")
+	ErrFragmentNotFound = errors.New("fragment of the value could not found")
 )
 
 type cacheOption func(cache *Cache) error
@@ -190,11 +191,11 @@ func (c *Cache) initShards() error {
 
 // setBin private method with more parameters to be used
 // while storing non-fragmented and fragmented entries
-func (c *Cache) setBin(key []byte, entry []byte, isFragmentedEntry bool) error {
+func (c *Cache) setBin(key []byte, entry []byte, fragmented bool) error {
 	hashedKey := c.hash.Hash(key)
 	s := c.shards[hashedKey&c.shardMask]
 
-	return s.set(key, entry, hashedKey, isFragmentedEntry)
+	return s.set(key, entry, hashedKey, fragmented)
 }
 
 // setBin private method with more parameters to be used
@@ -203,13 +204,13 @@ func (c *Cache) getBin(retBuf []byte, key []byte) ([]byte, bool, error) {
 	hashedKey := c.hash.Hash(key)
 	s := c.shards[hashedKey&c.shardMask]
 
-	retBuf, isFragmentedEntry, err := s.get(retBuf, key, hashedKey, true)
+	retBuf, fragmented, err := s.get(retBuf, key, hashedKey, true)
 
 	if err != nil {
 		return nil, false, err
 	}
 
-	return retBuf, isFragmentedEntry, nil
+	return retBuf, fragmented, nil
 }
 
 func (c *Cache) setFragmented(k []byte, v []byte) error {
@@ -260,6 +261,8 @@ func (c *Cache) setFragmented(k []byte, v []byte) error {
 }
 
 func (c *Cache) getFragmented(retBuf []byte, metadataValue []byte) ([]byte, error) {
+	//todo: stats arrangements for fragmented entries
+
 	fragmentKey := c.bpool.Get()
 	defer c.bpool.Put(fragmentKey)
 
@@ -296,7 +299,7 @@ func (c *Cache) getFragmented(retBuf []byte, metadataValue []byte) ([]byte, erro
 
 		if len(fragment) == len(retBuf) {
 			c.logger.Debug("fragment of the actual value could not found")
-			return nil, errors.New("fragment of the actual value could not found")
+			return nil, ErrFragmentNotFound
 		}
 		retBuf = fragment
 	}

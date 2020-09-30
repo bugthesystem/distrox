@@ -97,10 +97,10 @@ func newShard(
 // [1] - default chunk size is 64 kb to have low fragmentation
 // thus entries bigger than defaults divided into smaller parts
 // to fit into the 64kb chunk. The entry then stored with the actual key and the metadata
-// about these parts (`isFragmentedEntry` is 1 in this case) as value.
+// about these parts (`fragmented` is 1 in this case) as value.
 // When the entry requested, `isFragmentedEntry` flag will be used to determine
 // whether processing stored value to collect the parts of actual value is required or not.
-func (s *shard) set(k, v []byte, h uint64, isFragmentedEntry bool) error {
+func (s *shard) set(k, v []byte, h uint64, fragmented bool) error {
 	if len(k) >= defaultKeySizeInBytes {
 		return ErrEntryKeyTooBig
 	}
@@ -120,7 +120,7 @@ func (s *shard) set(k, v []byte, h uint64, isFragmentedEntry bool) error {
 	currentPosition := s.ring.Write(entryHeadersBuf[:], k, v)
 
 	var isBigEntry uint64 = 0
-	if isFragmentedEntry {
+	if fragmented {
 		isBigEntry = 1
 	}
 
