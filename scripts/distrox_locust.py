@@ -1,6 +1,7 @@
 from locust import HttpUser, TaskSet, task
 import random
 
+
 class DistroxApiUser(HttpUser):
     min_wait = 100
     max_wait = 1000
