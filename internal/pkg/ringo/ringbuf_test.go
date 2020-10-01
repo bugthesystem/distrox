@@ -11,15 +11,19 @@ import (
 func TestRingBuf_ReadWrite(t *testing.T) {
 	r := NewRingBuf(1024, 1024, common.NewDefaultPooled(1024))
 
-	expected := []byte("bar")
+	// put big value so that next entry can get to another mem-block
+	expected := make([]byte, 1010)
 
 	pos := r.Write(expected)
 	actual := r.Read(0, pos, pos+uint64(len(expected)))
 	assert.Equal(t, expected, actual)
 
-	expected = []byte("baz")
+	expected = []byte("hello lovely world!")
 	pos = r.Write(expected)
-	actual = r.Read(0, pos, pos+uint64(len(expected)))
+
+	indexToRead := pos / r.BlockSize()
+	pos %= r.BlockSize()
+	actual = r.Read(indexToRead, pos, pos+uint64(len(expected)))
 
 	assert.Equal(t, expected, actual)
 }
