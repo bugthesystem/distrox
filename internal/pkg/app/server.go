@@ -98,12 +98,7 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	err := s.cache.Reset()
-	if err != nil {
-		s.logger.Err("Failed to reset cache", err)
-	}
-
-	err = s.cache.Close()
+	err := s.cache.Close()
 	if err != nil {
 		s.logger.Err("Failed to close cache", err)
 	}
