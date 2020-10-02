@@ -27,8 +27,8 @@ func TestServerPut_Get_Delete_Get(t *testing.T) {
 	url := fmt.Sprintf("%s/v1/kv/%s", ts.URL, key)
 
 	// PUT
-	var expected = []byte("\\x68\\x65\\x6C\\x6C\\x6F\\x20\\x77\\x6F\\x72\\x6C\\x64\\x21") // hello world!
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(expected))
+	var want = []byte("\\x68\\x65\\x6C\\x6C\\x6F\\x20\\x77\\x6F\\x72\\x6C\\x64\\x21") // hello world!
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(want))
 
 	resp, err := client.Do(req)
 	assert.Nil(t, err)
@@ -45,8 +45,8 @@ func TestServerPut_Get_Delete_Get(t *testing.T) {
 	assert.Nil(t, err)
 	defer resp.Body.Close()
 
-	actual, _ := ioutil.ReadAll(resp.Body)
-	assert.True(t, bytes.Equal(expected, actual))
+	got, _ := ioutil.ReadAll(resp.Body)
+	assert.True(t, bytes.Equal(want, got))
 
 	// DELETE and GET
 	req, err = http.NewRequest("DELETE", url, nil)
