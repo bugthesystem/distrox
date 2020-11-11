@@ -1,5 +1,6 @@
 Distrox
 ==========
+Fast thread-safe in-memory cache that supports big number of entries.
 
 ## Env Specs
 - macOS Catalina 10.15.6
@@ -106,7 +107,7 @@ exceeded, but not from memory.
 
 
 ### Cache Persistence (Discussion)
-I did not implement persistence, but I'm going to discuss how it can be implemented below.
+Persistence is not implemented yet, but I'm going to discuss how it can be implemented below.
 
 **There are a few persistence options could be considered;**  
 - Cache DB persistence performs point-in-time snapshots of the data-set at specified intervals.
@@ -121,7 +122,7 @@ The following binary format could be used if the first option would be implement
 ```sh
 ----------------------------# CDB is a binary format, without new lines or spaces in the file.
 44 49 53 54 52 4f 58        # Magic String "DISTROX"
-30 30 30 31                 # 4 digit ASCII CDB Version Number. In this case, version = "0001" = 1
+30 30 30 31                 # 4 digit ASCI CDB Version Number. In this case, version = "0001" = 1
 4 bytes                     # Integer DB entry count, high byte first
 ----------------------------
 repeating {
