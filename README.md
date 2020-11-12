@@ -63,11 +63,11 @@ locust -f scripts/distrox_locust.py  --headless --users 1000 --spawn-rate 100 --
 
 ## Design Notes
 The cache is sharded and has its own locks thus the time spent is reduced
-while waiting for locks. Each shard has a map with [1]`hash(key) → packed(position((ts, key, value)), fragmened-flag)`
+while waiting for locks. Each shard has a map with [1]`hash(key) → packed(position((ts, key, value)), fragmented-flag)`
 in the ring buffer, and the ring buffer has 64 KB-size (for having a low-fragmentation) byte slices occupied
 by encoded (ts, key, value) entries.
 
--[1] - uint64 =>  63bits for position and last 1bit for the fragmented flag
+- [1] - uint64 =>  63bits for position and last 1bit for the fragmented flag
 
 There are two cases considered in terms of entry size; 
 ### Entries fit into default mem-block (64KB)
@@ -106,7 +106,7 @@ entry happened.  Its deleted from the index map if its lifetime
 exceeded, but not from memory.
 
 
-### Cache Persistence (Discussion)
+### Cache Persistence (planned)
 Persistence is not implemented yet, but I'm going to discuss how it can be implemented below.
 
 **There are a few persistence options could be considered;**  
@@ -159,6 +159,4 @@ repeating {
    * cover more server cases   
    * load test scenarios
 - Add deployment configurations (Dockerfile, Helm chart etc)
-- Use `docker locust` to prevent installing dependencies
-- Integrate exception monitoring tool (ie: Sentry)
 - Compression support could be added to the server (ie: gzip, brotli)
