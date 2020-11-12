@@ -1,6 +1,6 @@
 Distrox
 ==========
-Fast thread-safe in-memory cache that supports big number of entries.
+A fast thread-safe in-memory cache that supports a big number of entries in Go
 
 ## Env Specs
 - macOS Catalina 10.15.6
