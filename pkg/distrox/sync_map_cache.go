@@ -11,7 +11,6 @@ import (
 // sync map implementation of the cache to use in benchmarks.
 // cache implementations could be refactored to implement
 // the same interface but left out of scope.
-// I'm happy to discuss about details further.
 type syncMapCache struct {
 	m     *sync.Map
 	count int64
