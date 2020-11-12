@@ -2,10 +2,6 @@ Distrox
 ==========
 A fast thread-safe in-memory cache server that supports a big number of entries in Go
 
-## Env Specs
-- macOS Catalina 10.15.6
-- go1.15.2 darwin/amd64
-
 ## Running
 ```sh
 make run
@@ -29,6 +25,8 @@ There are more optimizations to be made to make read faster for example `3X.XXMB
 **Specs**  
 Processor: 2.4 GHz Quad-Core Intel Core i5  
 Memory   : 16 GB 2133 MHz LPDDR3  
+macOS Catalina 10.15.6
+go1.15.2 darwin/amd64
 
 ```
 ❯ make bench
