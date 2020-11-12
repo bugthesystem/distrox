@@ -143,7 +143,7 @@ repeating {
  - Clustering
  - Versioning (`VectorClock` could be used here)
 
-## Improvements
+## Improvements - planned
 - Memory blocks could be allocated off-heap
  (`mmap syscall` could be used to access the mapped memory as an array of bytes `[1]`) to prevent taking
  cache size into account by GOGC, and it can be pooled too.
