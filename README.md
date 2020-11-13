@@ -14,15 +14,15 @@ import (
 //... omitted for brevity
 
 logger := common.NewZeroLogger(config.app.mode)
-	cache, err := distrox.NewCache(
-		distrox.WithMaxBytes(config.cache.maxBytes),
-		distrox.WithShards(config.cache.shards),
-		distrox.WithMaxKeySize(config.cache.maxKeySizeInBytes),
-		distrox.WithMaxValueSize(config.cache.maxValueSizeInBytes),
-		distrox.WithTTL(config.cache.ttlInSeconds),
-		distrox.WithLogger(logger),
-		distrox.WithStatsEnabled(),
-	)
+cache, err := distrox.NewCache(
+	distrox.WithMaxBytes(config.cache.maxBytes),
+	distrox.WithShards(config.cache.shards),
+	distrox.WithMaxKeySize(config.cache.maxKeySizeInBytes),
+	distrox.WithMaxValueSize(config.cache.maxValueSizeInBytes),
+	distrox.WithTTL(config.cache.ttlInSeconds),
+	distrox.WithLogger(logger),
+	distrox.WithStatsEnabled(),
+)
   
  // use cache here
 ```
