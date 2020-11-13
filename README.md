@@ -2,6 +2,31 @@ Distrox
 ==========
 A fast thread-safe in-memory cache server that supports a big number of entries in Go
 
+> It can be used as a standalone server or imported as a separate package.
+
+## Example as package
+```go
+import (
+  //... omitted for brevity
+	"github.com/ziyasal/distroxy/pkg/distrox"
+)
+
+//... omitted for brevity
+
+logger := common.NewZeroLogger(config.app.mode)
+	cache, err := distrox.NewCache(
+		distrox.WithMaxBytes(config.cache.maxBytes),
+		distrox.WithShards(config.cache.shards),
+		distrox.WithMaxKeySize(config.cache.maxKeySizeInBytes),
+		distrox.WithMaxValueSize(config.cache.maxValueSizeInBytes),
+		distrox.WithTTL(config.cache.ttlInSeconds),
+		distrox.WithLogger(logger),
+		distrox.WithStatsEnabled(),
+	)
+  
+ // use cache here
+```
+
 ## Running
 ```sh
 make run
