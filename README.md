@@ -1,6 +1,6 @@
 Distrox
 ==========
-A fast thread-safe in-memory cache server that supports a big number of entries in Go
+A fast thread-safe in-memory cache library and server that supports a big number of entries in Go
 
 > It can be used as a standalone server or imported as a separate package.
 
